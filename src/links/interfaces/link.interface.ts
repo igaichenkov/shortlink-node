@@ -1,5 +1,6 @@
 export class Link {
-  readonly id: string;
-  readonly shortUrl: string;
-  readonly fullUrl: string;
+  id: string;
+  shortUrl: string;
+  fullUrl: string;
+  userId: string;
 }
