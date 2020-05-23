@@ -1,5 +1,5 @@
-export interface Link {
-  id: string;
-  shortUrl: string;
-  fullUrl: string;
+export class Link {
+  readonly id: string;
+  readonly shortUrl: string;
+  readonly fullUrl: string;
 }
