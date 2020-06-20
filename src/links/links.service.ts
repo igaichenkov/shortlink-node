@@ -1,56 +1,65 @@
-import { Injectable, ValidationError } from '@nestjs/common';
-import { Link } from './interfaces/link.interface';
+import { Injectable } from '@nestjs/common';
+import { Link } from './models/link';
+import { ILink } from './interfaces/link.interface';
 import { nanoid } from 'nanoid';
 import { isUri } from 'valid-url';
+import LinkSettings from './LinkSettings';
+import { Model, Error } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class LinksService {
-  private links: Link[] = [
-    {
-      id: nanoid(),
-      shortUrl: 'http://localhost:3000/absdfuxs34sdf',
-      fullUrl: 'https://google.com/',
-      userId: '1',
-    },
-  ];
+    private readonly settings: LinkSettings;
+    private readonly linkModel: Model<Link>;
 
-  private readonly baseUrl: string;
+    constructor(
+        settings: LinkSettings,
+        @InjectModel(Link.name) linkModel: Model<Link>,
+    ) {
+        if (!settings) throw new Error("'settings' parameter must be defined");
 
-  constructor(private settings: LinkSettings) {}
+        if (!linkModel)
+            throw new Error("'linkModel' parameter must be defined");
 
-  getUserLinks(userId: string): Link[] {
-    return this.links.filter(l => l.userId == userId);
-  }
+        this.settings = settings;
+        this.linkModel = linkModel;
+    }
 
-  createLink(userId: string, url: string) {
-    if (!userId)
-      throw new Error('[LinksService]: userId parameter must be provided');
+    async getUserLinks(): Promise<ILink[]> {
+        /*if (!userId)
+      throw new Error('[LinksService]: userId parameter must be provided');*/
 
-    if (!isUri(url))
-      throw new Error('[LinksService] url parameter must be a valid url');
+        return await this.linkModel.find().exec();
+    }
 
-    const newUrlId = nanoid();
+    async getUserLinkById(linkId: string): Promise<ILink | null> {
+        /*if (!userId)
+      throw new Error('[LinksService]: userId parameter must be provided');*/
 
-    const newLink: Link = {
-      userId: userId,
-      fullUrl: url,
-      id: newUrlId,
-      shortUrl: this.baseUrl + newUrlId,
-    };
+        const link = await this.linkModel.findById(linkId).exec();
+        // TODO: check user id
+        return link;
+    }
 
-    this.links.push(newLink);
-  }
-}
+    async createLink(url: string, isPermanent: boolean): Promise<ILink> {
+        /*if (!userId)
+      throw new Error('[LinksService]: userId parameter must be provided');*/
 
-export class LinkSettings {
-  public readonly baseUrl: string;
+        if (!isUri(url))
+            throw new Error('[LinksService] url parameter must be a valid url');
 
-  constructor(baseUrl: string) {
-    if (!isUri(baseUrl))
-      throw new Error(`[LinkSettings] ${baseUrl} is not a valid url`);
+        const newUrlId = nanoid(this.settings.shortIdLength);
 
-    this.baseUrl = baseUrl;
+        const newLink = await this.linkModel.create({
+            originalUrl: url,
+            isPermanent: isPermanent,
+            shortId: newUrlId,
+        });
 
-    if (!baseUrl.endsWith('/')) this.baseUrl += '/';
-  }
+        return newLink;
+    }
+
+    async deleteUserLink(linkId: string): Promise<ILink | null> {
+        return await this.linkModel.findByIdAndDelete(linkId).exec();
+    }
 }

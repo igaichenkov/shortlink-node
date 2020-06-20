@@ -1,6 +1,7 @@
-export class Link {
-  id: string;
-  shortUrl: string;
-  fullUrl: string;
-  userId: string;
+export interface ILink {
+    id?: string;
+    originalUrl: string;
+    isPermanent: boolean;
+    shortId: string;
+    createdOn: Date;
 }
