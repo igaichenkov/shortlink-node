@@ -12,10 +12,10 @@ export class Link extends Document implements ILink {
     @Prop({ required: true })
     isPermanent: boolean;
 
-    @Prop({ required: true })
+    @Prop({ required: true, unique: true })
     shortId: string;
 
-    @Prop({ required: true, default: new Date() })
+    @Prop({ required: true, default: () => new Date() })
     createdOn: Date;
 }
 

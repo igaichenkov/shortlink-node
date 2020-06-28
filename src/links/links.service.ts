@@ -1,27 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { Link } from './models/link';
 import { ILink } from './interfaces/link.interface';
-import { nanoid } from 'nanoid';
 import { isUri } from 'valid-url';
-import LinkSettings from './LinkSettings';
 import { Model, Error } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { LinkIdGenerator } from './linkIdGenerator';
+import { retry } from '../utils/retry';
+
+const MAX_RETRIES = 10;
 
 @Injectable()
 export class LinksService {
-    private readonly settings: LinkSettings;
     private readonly linkModel: Model<Link>;
+    private readonly idGenerator: LinkIdGenerator;
 
     constructor(
-        settings: LinkSettings,
+        idGenerator: LinkIdGenerator,
         @InjectModel(Link.name) linkModel: Model<Link>,
     ) {
-        if (!settings) throw new Error("'settings' parameter must be defined");
+        if (!idGenerator)
+            throw new Error("'settings' parameter must be defined");
 
         if (!linkModel)
             throw new Error("'linkModel' parameter must be defined");
 
-        this.settings = settings;
+        this.idGenerator = idGenerator;
         this.linkModel = linkModel;
     }
 
@@ -41,6 +44,11 @@ export class LinksService {
         return link;
     }
 
+    async resolveFullUrl(shortId: string): Promise<string | null> {
+        const url = await this.linkModel.findOne({ shortId }).exec();
+        return url ? url.originalUrl : null;
+    }
+
     async createLink(url: string, isPermanent: boolean): Promise<ILink> {
         /*if (!userId)
       throw new Error('[LinksService]: userId parameter must be provided');*/
@@ -48,15 +56,23 @@ export class LinksService {
         if (!isUri(url))
             throw new Error('[LinksService] url parameter must be a valid url');
 
-        const newUrlId = nanoid(this.settings.shortIdLength);
+        return await retry(
+            () => this.createLinkInternal(url, isPermanent),
+            MAX_RETRIES,
+        );
+    }
 
-        const newLink = await this.linkModel.create({
+    private async createLinkInternal(
+        url: string,
+        isPermanent: boolean,
+    ): Promise<ILink> {
+        const newUrlId = this.idGenerator.GenerateId();
+
+        return await this.linkModel.create({
             originalUrl: url,
             isPermanent: isPermanent,
             shortId: newUrlId,
         });
-
-        return newLink;
     }
 
     async deleteUserLink(linkId: string): Promise<ILink | null> {

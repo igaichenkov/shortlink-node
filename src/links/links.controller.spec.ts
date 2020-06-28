@@ -4,6 +4,7 @@ import { LinksService } from './links.service';
 import LinkSettings from './LinkSettings';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Link, LinkSchema } from './models/link';
+import { LinkIdGenerator } from './linkIdGenerator';
 
 describe('Links Controller', () => {
     let controller: LinksController;
@@ -29,6 +30,7 @@ describe('Links Controller', () => {
                 },
                 LinksService,
                 LinksController,
+                LinkIdGenerator,
             ],
         }).compile();
 

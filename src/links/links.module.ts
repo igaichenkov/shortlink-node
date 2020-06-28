@@ -3,12 +3,13 @@ import { LinksController } from './links.controller';
 import { LinksService } from './links.service';
 import { Link, LinkSchema } from './models/link';
 import { MongooseModule } from '@nestjs/mongoose';
+import { LinkIdGenerator } from './linkIdGenerator';
 
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: Link.name, schema: LinkSchema }]),
     ],
     controllers: [LinksController],
-    providers: [LinksService],
+    providers: [LinksService, LinkIdGenerator],
 })
 export class LinksModule {}

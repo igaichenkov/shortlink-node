@@ -5,6 +5,7 @@ import LinkSettings from './LinkSettings';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ILink } from './interfaces/link.interface';
+import { LinkIdGenerator } from './linkIdGenerator';
 
 const ensureEquals = (link1: ILink, link2: ILink) => {
     expect(link1.id).toBe(link2.id);
@@ -16,17 +17,21 @@ const ensureEquals = (link1: ILink, link2: ILink) => {
     ).toBeLessThan(1000);
 };
 
+const mockIdGenerator = (idGenerator: LinkIdGenerator, returnValue: string) => {
+    jest.spyOn(idGenerator, 'GenerateId').mockImplementationOnce(
+        () => returnValue,
+    );
+};
+
+const settings: LinkSettings = new LinkSettings('http://localhost:3000', 5);
+
 describe('LinksService', () => {
     let service: LinksService;
     let linkModel: Model<Link>;
     let module: TestingModule;
+    let idGenerator: LinkIdGenerator;
 
-    beforeAll(async () => {
-        const settings: LinkSettings = new LinkSettings(
-            'http://localhost:3000',
-            5,
-        );
-
+    beforeEach(async () => {
         module = await Test.createTestingModule({
             imports: [
                 MongooseModule.forRoot('mongodb://localhost/shortlink-test'),
@@ -40,25 +45,25 @@ describe('LinksService', () => {
                     useFactory: () => settings,
                 },
                 LinksService,
+                LinkIdGenerator,
             ],
         }).compile();
 
         service = module.get<LinksService>(LinksService);
         linkModel = module.get<Model<Link>>(getModelToken(Link.name));
-    });
+        idGenerator = module.get<LinkIdGenerator>(LinkIdGenerator);
 
-    beforeEach(async () => {
         await linkModel.deleteMany({});
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
         await module.close();
     });
 
     const createTestLinkEntry = async (): Promise<Link> => {
         return await linkModel.create({
             originalUrl: 'https://google.com/maps',
-            shortId: '123',
+            shortId: idGenerator.GenerateId(),
             isPermanent: true,
         });
     };
@@ -81,5 +86,63 @@ describe('LinksService', () => {
 
         expect(userLink).not.toBeNull();
         ensureEquals(userLink!, link);
+    });
+
+    it('should return null if link does not exist', async () => {
+        const userLink = await service.getUserLinkById(
+            '507f1f77bcf86cd799439011',
+        );
+        expect(userLink).toBeNull();
+    });
+
+    it('should resolve original url by short id', async () => {
+        const link = await createTestLinkEntry();
+
+        const fullUrl = await service.resolveFullUrl(link.shortId);
+        expect(fullUrl).toBe(link.originalUrl);
+    });
+
+    it('should resolve original url to null if url does not exist', async () => {
+        const fullUrl = await service.resolveFullUrl(
+            '507f1f77bcf86cd799439011',
+        );
+        expect(fullUrl).toBeNull();
+    });
+
+    it('should delete link by id', async () => {
+        const link = await createTestLinkEntry();
+
+        const userLink = await service.deleteUserLink(link.id);
+
+        expect(userLink).not.toBeNull();
+        ensureEquals(userLink!, link);
+
+        expect(await linkModel.findById(link.id).exec()).toBeNull();
+    });
+
+    it('should create a new short link entry', async () => {
+        const fullUrl = 'https://google.com';
+        const date = new Date().getTime();
+        const linkEntry = await service.createLink(fullUrl, true);
+
+        expect(linkEntry.isPermanent).toBe(true);
+        expect(linkEntry.originalUrl).toBe(fullUrl);
+        expect(linkEntry.createdOn.getTime()).toBeGreaterThanOrEqual(date);
+        expect(linkEntry.shortId.length).toBe(settings.shortIdLength);
+        expect(linkEntry.id).toBeTruthy();
+    });
+
+    it('should retry if shortId already exists', async () => {
+        const fullUrl1 = 'https://google.com';
+        const fullUrl2 = 'https://facebook.com';
+        const fakeShortId = '123456';
+
+        mockIdGenerator(idGenerator, fakeShortId);
+        let linkEntry = await service.createLink(fullUrl1, true);
+
+        mockIdGenerator(idGenerator, fakeShortId);
+        linkEntry = await service.createLink(fullUrl2, true);
+
+        expect(linkEntry.originalUrl).toBe(fullUrl2);
     });
 });
