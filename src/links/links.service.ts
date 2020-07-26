@@ -9,8 +9,16 @@ import { retry } from '../utils/retry';
 
 const MAX_RETRIES = 10;
 
+export interface ILinkService {
+    getUserLinks(): Promise<ILink[]>;
+    getUserLinkById(linkId: string): Promise<ILink | null>;
+    resolveFullUrl(shortId: string): Promise<string | null>;
+    createLink(url: string, isPermanent: boolean): Promise<ILink>;
+    deleteUserLink(linkId: string): Promise<ILink | null>;
+}
+
 @Injectable()
-export class LinksService {
+export class LinksService implements ILinkService {
     private readonly linkModel: Model<Link>;
     private readonly idGenerator: LinkIdGenerator;
 

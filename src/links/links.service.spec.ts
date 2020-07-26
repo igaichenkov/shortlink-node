@@ -6,6 +6,7 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ILink } from './interfaces/link.interface';
 import { LinkIdGenerator } from './linkIdGenerator';
+import { rejects } from 'assert';
 
 const ensureEquals = (link1: ILink, link2: ILink) => {
     expect(link1.id).toBe(link2.id);
@@ -120,6 +121,14 @@ describe('LinksService', () => {
         expect(await linkModel.findById(link.id).exec()).toBeNull();
     });
 
+    it('should return null if deleted link does not exist', async () => {
+        const userLink = await service.deleteUserLink(
+            '507f1f77bcf86cd799439011',
+        );
+
+        expect(userLink).toBeNull();
+    });
+
     it('should create a new short link entry', async () => {
         const fullUrl = 'https://google.com';
         const date = new Date().getTime();
@@ -132,17 +141,17 @@ describe('LinksService', () => {
         expect(linkEntry.id).toBeTruthy();
     });
 
-    it('should retry if shortId already exists', async () => {
-        const fullUrl1 = 'https://google.com';
-        const fullUrl2 = 'https://facebook.com';
+    it('should throw exception if fails to find an unique id', async () => {
         const fakeShortId = '123456';
 
-        mockIdGenerator(idGenerator, fakeShortId);
+        jest.spyOn(idGenerator, 'GenerateId').mockImplementation(
+            () => fakeShortId,
+        );
+
+        const fullUrl1 = 'https://google.com';
+        const fullUrl2 = 'https://facebook.com';
+
         let linkEntry = await service.createLink(fullUrl1, true);
-
-        mockIdGenerator(idGenerator, fakeShortId);
-        linkEntry = await service.createLink(fullUrl2, true);
-
-        expect(linkEntry.originalUrl).toBe(fullUrl2);
+        await expect(service.createLink(fullUrl2, true)).rejects.toThrowError();
     });
 });
