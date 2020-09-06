@@ -6,7 +6,6 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ILink } from './interfaces/link.interface';
 import { LinkIdGenerator } from './linkIdGenerator';
-import { rejects } from 'assert';
 
 const ensureEquals = (link1: ILink, link2: ILink) => {
     expect(link1.id).toBe(link2.id);
@@ -16,12 +15,6 @@ const ensureEquals = (link1: ILink, link2: ILink) => {
     expect(
         Math.abs(link1.createdOn.getTime() - link2.createdOn.getTime()),
     ).toBeLessThan(1000);
-};
-
-const mockIdGenerator = (idGenerator: LinkIdGenerator, returnValue: string) => {
-    jest.spyOn(idGenerator, 'GenerateId').mockImplementationOnce(
-        () => returnValue,
-    );
 };
 
 const settings: LinkSettings = new LinkSettings('http://localhost:3000', 5);
@@ -151,7 +144,7 @@ describe('LinksService', () => {
         const fullUrl1 = 'https://google.com';
         const fullUrl2 = 'https://facebook.com';
 
-        let linkEntry = await service.createLink(fullUrl1, true);
+        await service.createLink(fullUrl1, true);
         await expect(service.createLink(fullUrl2, true)).rejects.toThrowError();
     });
 });

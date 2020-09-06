@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LinksController } from './links.controller';
 import { LinksService } from './links.service';
 import LinkSettings from './LinkSettings';
-import { LinkIdGenerator } from './linkIdGenerator';
+import { LinkIdGenerator } from './LinkIdGenerator';
 import { FakeLinksService } from './mocks/FakeLinksService';
 import { nanoid } from 'nanoid';
 import { ILink } from './interfaces/link.interface';
