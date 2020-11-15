@@ -11,6 +11,7 @@ export default class LinkSettings {
 
         this.baseUrl = baseUrl;
 
-        if (!baseUrl.endsWith('/')) this.baseUrl += '/';
+        if (!baseUrl.endsWith('/'))
+            this.baseUrl += '/';
     }
 }
