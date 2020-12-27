@@ -28,6 +28,8 @@ export class FakeLinksService implements ILinkService {
             shortId: Date.now().toString(),
         };
 
+        this.data.push(link);
+
         return Promise.resolve(link);
     }
 

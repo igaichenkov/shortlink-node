@@ -134,7 +134,7 @@ describe('LinksService', () => {
         expect(linkEntry.id).toBeTruthy();
     });
 
-    it('should throw exception if fails to find an unique id', async () => {
+    it('should throw exception if fails to find a unique id', async () => {
         const fakeShortId = '123456';
 
         jest.spyOn(idGenerator, 'GenerateId').mockImplementation(
@@ -146,5 +146,22 @@ describe('LinksService', () => {
 
         await service.createLink(fullUrl1, true);
         await expect(service.createLink(fullUrl2, true)).rejects.toThrowError();
+    });
+
+    it('does not generate unique id if short id provided', async () => {
+        const fakeShortId = '123456';
+
+        jest.spyOn(idGenerator, 'GenerateId').mockImplementation(
+            () => fakeShortId,
+        );
+
+        const fullUrl1 = 'https://google.com';
+        const fullUrl2 = 'https://facebook.com';
+
+        await service.createLink(fullUrl1, true);
+
+        const definedId = '54321';
+        const link = await service.createLink(fullUrl2, true, definedId);
+        expect(link.shortId).toBe(definedId);
     });
 });

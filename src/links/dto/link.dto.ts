@@ -10,11 +10,14 @@ export class LinkDTO {
     readonly originalUrl: string;
     @ApiProperty()
     readonly createdOn: Date;
+    @ApiProperty()
+    readonly isPermanent: boolean;
 
     constructor(link: ILink, baseUrl: string) {
         this.id = link.id;
         this.shortUrl = baseUrl + link.shortId;
         this.originalUrl = link.originalUrl;
         this.createdOn = link.createdOn;
+        this.isPermanent = link.isPermanent;
     }
 }

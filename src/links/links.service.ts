@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Link } from './models/link';
 import { ILink } from './interfaces/link.interface';
 import { isUri } from 'valid-url';
-import { Model, Error } from 'mongoose';
+import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { LinkIdGenerator } from './linkIdGenerator';
 import { retry } from '../utils/retry';
+import { MongoError } from 'mongodb';
 
 const MAX_RETRIES = 10;
 
@@ -57,29 +58,69 @@ export class LinksService implements ILinkService {
         return url ? url.originalUrl : null;
     }
 
-    async createLink(url: string, isPermanent: boolean): Promise<ILink> {
+    async createLink(
+        fullUrl: string,
+        isPermanent: boolean,
+        shortId?: string | undefined,
+    ): Promise<ILink> {
         /*if (!userId)
       throw new Error('[LinksService]: userId parameter must be provided');*/
 
-        if (!isUri(url))
+        if (!isUri(fullUrl))
             throw new Error('[LinksService] url parameter must be a valid url');
 
-        return await retry(
-            () => this.createLinkInternal(url, isPermanent),
-            MAX_RETRIES,
-        );
+        if (shortId && shortId.length > 0) {
+            // we are not generating short id, do not retry
+            return await this.saveShortLink(fullUrl, isPermanent, shortId);
+        }
+
+        try {
+            // retry in case a random generated shortId already exists
+            return await retry(
+                () => this.generateShortIdAndSave(fullUrl, isPermanent),
+                MAX_RETRIES,
+            );
+        } catch (e) {
+            console.error(e);
+            throw new Error('Failed creating a new link');
+        }
     }
 
-    private async createLinkInternal(
+    private async saveShortLink(
+        url: string,
+        isPermanent: boolean,
+        shortId: string,
+    ) {
+        try {
+            return await this.saveLinkInternal(url, isPermanent, shortId);
+        } catch (e) {
+            const duplicateKeyErrorCode = 11000;
+            if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
+                throw new Error(`Link ${shortId} already exists`);
+            }
+
+            console.error(e);
+            throw new Error('Failed creating a new link');
+        }
+    }
+
+    private async generateShortIdAndSave(
         url: string,
         isPermanent: boolean,
     ): Promise<ILink> {
-        const newUrlId = this.idGenerator.GenerateId();
+        const shortId = this.idGenerator.GenerateId();
+        return await this.saveLinkInternal(url, isPermanent, shortId);
+    }
 
+    private async saveLinkInternal(
+        url: string,
+        isPermanent: boolean,
+        shortId?: string,
+    ) {
         return await this.linkModel.create({
             originalUrl: url,
             isPermanent: isPermanent,
-            shortId: newUrlId,
+            shortId: shortId,
         });
     }
 
