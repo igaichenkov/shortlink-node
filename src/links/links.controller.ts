@@ -6,6 +6,7 @@ import {
     Body,
     HttpException,
     Delete,
+    HttpCode,
 } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { ILink } from './interfaces/link.interface';
@@ -43,6 +44,7 @@ export class LinksController {
 
     @Post()
     @ApiCreatedResponse({ type: LinkDTO })
+    @HttpCode(201)
     async CreateLink(@Body() dto: CreateLinkDTO): Promise<LinkDTO> {
         const link = await this.linksService.createLink(
             dto.fullUrl,
