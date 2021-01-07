@@ -8,7 +8,6 @@ import { nanoid } from 'nanoid';
 import { ILink } from './interfaces/link.interface';
 import { LinkDTO } from './dto/link.dto';
 import { HttpException } from '@nestjs/common';
-import { FastifyReply } from 'fastify';
 
 const fakeLinks: ILink[] = [
     {
@@ -96,35 +95,11 @@ describe('Links Controller', () => {
     it('POST should create a link', async () => {
         const testUrl = 'https://google.com/some/page/path/';
         const isPermanent = true;
-        const reply = {} as FastifyReply;
 
-        let headerName: string = '';
-        let headerValue: string = '';
-        let responseStatusCode = 0;
-
-        reply.header = (key: string, value: any) => {
-            headerName = key;
-            headerValue = value;
-            return reply;
-        };
-
-        reply.send = _ => reply;
-        reply.status = statusCode => {
-            responseStatusCode = statusCode;
-            return reply;
-        };
-
-        const linkDto = await controller.CreateLink(
-            {
-                fullUrl: testUrl,
-                isPermanent,
-            },
-            reply,
-        );
-
-        expect(headerName).toBe('Location');
-        expect(headerValue).toBe(linkDto.shortUrl);
-        expect(responseStatusCode).toBe(201);
+        const linkDto = await controller.CreateLink({
+            fullUrl: testUrl,
+            isPermanent,
+        });
 
         expect(linkDto.originalUrl).toBe(testUrl);
         expect(linkDto.isPermanent).toBe(isPermanent);

@@ -6,8 +6,6 @@ import {
     Body,
     HttpException,
     Delete,
-    Res,
-    HttpCode,
 } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { ILink } from './interfaces/link.interface';
@@ -15,8 +13,6 @@ import { LinkDTO } from './dto/link.dto';
 import { CreateLinkDTO } from './dto/createLink.dto';
 import { ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import LinkSettings from './LinkSettings';
-import HttpUtils from '../utils/HttpUtils';
-import { FastifyReply } from 'fastify';
 
 @Controller('links')
 export class LinksController {
@@ -47,19 +43,13 @@ export class LinksController {
 
     @Post()
     @ApiCreatedResponse({ type: LinkDTO })
-    async CreateLink(
-        @Body() dto: CreateLinkDTO,
-        @Res() res: FastifyReply,
-    ): Promise<LinkDTO> {
+    async CreateLink(@Body() dto: CreateLinkDTO): Promise<LinkDTO> {
         const link = await this.linksService.createLink(
             dto.fullUrl,
             dto.isPermanent,
         );
 
         const responseDto = this.convertToLinkDTO(link);
-        HttpUtils.AddLocationHeader(res, responseDto.shortUrl);
-        res.send(responseDto).status(201);
-
         return responseDto;
     }
 

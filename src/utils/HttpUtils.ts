@@ -1,7 +1,7 @@
-import { FastifyReply } from 'fastify';
+import { Response } from 'express';
 
 export default class HttpUtils {
-    static AddLocationHeader(res: FastifyReply, url: string): void {
+    static AddLocationHeader(res: Response, url: string): void {
         res.header('Location', url);
     }
 }

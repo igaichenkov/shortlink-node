@@ -81,7 +81,7 @@ export class LinksService implements ILinkService {
                 MAX_RETRIES,
             );
         } catch (e) {
-            console.error(e);
+            // TODO: logger
             throw new Error('Failed creating a new link');
         }
     }
@@ -94,12 +94,12 @@ export class LinksService implements ILinkService {
         try {
             return await this.saveLinkInternal(url, isPermanent, shortId);
         } catch (e) {
+            // TODO: logger
             const duplicateKeyErrorCode = 11000;
             if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
                 throw new Error(`Link ${shortId} already exists`);
             }
 
-            console.error(e);
             throw new Error('Failed creating a new link');
         }
     }
