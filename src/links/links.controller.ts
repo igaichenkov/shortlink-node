@@ -7,13 +7,15 @@ import {
     HttpException,
     Delete,
     HttpCode,
+    Put,
 } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { ILink } from './interfaces/link.interface';
 import { LinkDTO } from './dto/link.dto';
-import { CreateLinkDTO } from './dto/createLink.dto';
+import { CreateLinkDTO } from './dto/create-link.dto';
 import { ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import LinkSettings from './LinkSettings';
+import { UpdateLinkDTO } from './dto/update-link.dto';
 
 @Controller('links')
 export class LinksController {
@@ -51,8 +53,25 @@ export class LinksController {
             dto.isPermanent,
         );
 
-        const responseDto = this.convertToLinkDTO(link);
-        return responseDto;
+        return this.convertToLinkDTO(link);
+    }
+
+    @Put(':id')
+    @ApiResponse({ status: 200, type: LinkDTO })
+    @ApiResponse({ status: 404 })
+    async Update(@Param('id') id: string, @Body() dto: UpdateLinkDTO) {
+        const link = await this.linksService.updateLink(
+            id,
+            dto.fullUrl,
+            dto.isPermanent,
+            dto.shortId,
+        );
+
+        if (link === null) {
+            throw new HttpException('Link not found', 404);
+        }
+
+        return this.convertToLinkDTO(link);
     }
 
     @Delete(':id')

@@ -3,7 +3,7 @@ import { LinksService } from './links.service';
 import { Link, LinkSchema } from './models/link';
 import LinkSettings from './LinkSettings';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ILink } from './interfaces/link.interface';
 import { LinkIdGenerator } from './linkIdGenerator';
 
@@ -132,6 +132,10 @@ describe('LinksService', () => {
         expect(linkEntry.createdOn.getTime()).toBeGreaterThanOrEqual(date);
         expect(linkEntry.shortId.length).toBe(settings.shortIdLength);
         expect(linkEntry.id).toBeTruthy();
+
+        const dbEntry = await linkModel.findById(linkEntry.id).exec();
+        expect(dbEntry).not.toBeNull();
+        ensureEquals(dbEntry as ILink, linkEntry);
     });
 
     it('should throw exception if fails to find a unique id', async () => {
@@ -163,5 +167,45 @@ describe('LinksService', () => {
         const definedId = '54321';
         const link = await service.createLink(fullUrl2, true, definedId);
         expect(link.shortId).toBe(definedId);
+    });
+
+    it('should update link', async () => {
+        const newFullUrl = 'https://facebook.com';
+        const newShortId = idGenerator.GenerateId();
+        const link = await createTestLinkEntry();
+
+        const updatedLink = await service.updateLink(
+            link.id,
+            newFullUrl,
+            false,
+            newShortId,
+        );
+
+        expect(updatedLink).not.toBeNull();
+        expect(updatedLink?.originalUrl).toBe(newFullUrl);
+        expect(updatedLink?.isPermanent).toBe(false);
+        expect(updatedLink?.shortId).toBe(newShortId);
+
+        const dbEntry = await linkModel.findById(link.id).exec();
+        expect(dbEntry).not.toBeNull();
+
+        ensureEquals(dbEntry as ILink, updatedLink as ILink);
+    });
+
+    it('should return null if link does not exist', async () => {
+        await createTestLinkEntry();
+
+        const newFullUrl = 'https://facebook.com';
+        const newShortId = idGenerator.GenerateId();
+        await createTestLinkEntry();
+
+        const updatedLink = await await service.updateLink(
+            Types.ObjectId().toString(),
+            newFullUrl,
+            false,
+            newShortId,
+        );
+
+        expect(updatedLink).toBeNull();
     });
 });

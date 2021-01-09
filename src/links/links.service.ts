@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { LinkIdGenerator } from './linkIdGenerator';
 import { retry } from '../utils/retry';
 import { MongoError } from 'mongodb';
+import { Types } from 'mongoose';
 
 const MAX_RETRIES = 10;
 
@@ -84,6 +85,32 @@ export class LinksService implements ILinkService {
             // TODO: logger
             throw new Error('Failed creating a new link');
         }
+    }
+
+    public async updateLink(
+        id: string,
+        url?: string,
+        isPermanent?: boolean,
+        shortId?: string,
+    ) {
+        const updateCmd = {} as any;
+
+        if (url) {
+            updateCmd.originalUrl = url;
+        }
+
+        if (isPermanent !== null || isPermanent !== undefined) {
+            updateCmd.isPermanent = isPermanent;
+        }
+
+        if (shortId) {
+            updateCmd.shortId = shortId;
+        }
+
+        const options = { new: true };
+        return await this.linkModel
+            .findByIdAndUpdate(id, updateCmd, options)
+            .exec();
     }
 
     private async saveShortLink(

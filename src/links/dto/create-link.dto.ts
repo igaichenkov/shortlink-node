@@ -5,6 +5,6 @@ export class CreateLinkDTO {
     readonly fullUrl: string;
     @ApiProperty()
     readonly isPermanent: boolean;
-    @ApiProperty()
+    @ApiProperty({ required: false })
     readonly shortId?: string;
 }
