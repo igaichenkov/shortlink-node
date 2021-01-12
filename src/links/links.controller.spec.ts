@@ -3,28 +3,11 @@ import { LinksController } from './links.controller';
 import { LinksService } from './links.service';
 import LinkSettings from './LinkSettings';
 import { LinkIdGenerator } from './LinkIdGenerator';
-import { FakeLinksService } from './mocks/FakeLinksService';
+import { InMemoryLinksService } from './mocks/InMemoryLinksService';
 import { nanoid } from 'nanoid';
 import { ILink } from './interfaces/link.interface';
 import { LinkDTO } from './dto/link.dto';
 import { HttpException } from '@nestjs/common';
-
-const fakeLinks: ILink[] = [
-    {
-        id: nanoid(12),
-        originalUrl: 'http://something.org',
-        createdOn: new Date(),
-        isPermanent: false,
-        shortId: nanoid(6),
-    },
-    {
-        id: nanoid(12),
-        originalUrl: 'https://another_web_site.org/some/relative/path?id=42',
-        createdOn: new Date(),
-        isPermanent: false,
-        shortId: nanoid(6),
-    },
-];
 
 const SERVER_URL = 'http://localhost:3000';
 
@@ -38,11 +21,11 @@ const compareLinks = (link: ILink, dto: LinkDTO) => {
 describe('Links Controller', () => {
     let controller: LinksController;
     let module: TestingModule;
-    let fakeLinksService: FakeLinksService;
+    let fakeLinksService: InMemoryLinksService;
 
     beforeAll(async () => {
         const settings: LinkSettings = new LinkSettings(SERVER_URL, 5);
-        fakeLinksService = new FakeLinksService(fakeLinks);
+        fakeLinksService = new InMemoryLinksService([]);
 
         module = await Test.createTestingModule({
             providers: [
@@ -62,6 +45,27 @@ describe('Links Controller', () => {
         controller = module.get<LinksController>(LinksController);
     });
 
+    beforeEach(() => {
+        fakeLinksService.data.length = 0;
+
+        fakeLinksService.data.push({
+            id: nanoid(12),
+            originalUrl: 'http://something.org',
+            createdOn: new Date(),
+            isPermanent: false,
+            shortId: nanoid(6),
+        });
+
+        fakeLinksService.data.push({
+            id: nanoid(12),
+            originalUrl:
+                'https://another_web_site.org/some/relative/path?id=42',
+            createdOn: new Date(),
+            isPermanent: false,
+            shortId: nanoid(6),
+        });
+    });
+
     afterAll(async () => {
         await module.close();
     });
@@ -70,19 +74,21 @@ describe('Links Controller', () => {
         expect(controller).toBeDefined();
     });
 
-    it('should return all user links', async () => {
+    it('GET should return all user links', async () => {
         const links = await controller.GetAll();
         expect(links.length).toBe(2);
-        compareLinks(fakeLinks[0], links[0]);
-        compareLinks(fakeLinks[1], links[1]);
+        compareLinks(fakeLinksService.data[0], links[0]);
+        compareLinks(fakeLinksService.data[1], links[1]);
     });
 
-    it('should return link by id', async () => {
-        const linkResponse = await controller.GetById(fakeLinks[1].id!);
-        compareLinks(fakeLinks[1], linkResponse);
+    it('GET should return link by id', async () => {
+        const linkResponse = await controller.GetById(
+            fakeLinksService.data[1].id!,
+        );
+        compareLinks(fakeLinksService.data[1], linkResponse);
     });
 
-    it('should throw HttpException if link does not exist', async () => {
+    it('GET should throw HttpException if link does not exist', async () => {
         expect.assertions(1);
         try {
             await controller.GetById('not existing link id');
@@ -105,6 +111,62 @@ describe('Links Controller', () => {
         expect(linkDto.isPermanent).toBe(isPermanent);
         expect(linkDto.shortUrl).toContain(SERVER_URL);
 
-        compareLinks(fakeLinks[fakeLinks.length - 1], linkDto);
+        compareLinks(
+            fakeLinksService.data[fakeLinksService.data.length - 1],
+            linkDto,
+        );
+    });
+
+    it('PUT should update a link', async () => {
+        const testUrl = 'https://google.com/some/page/path/';
+        const isPermanent = false;
+        const newShortId = '556677';
+        fakeLinksService.data[0].isPermanent = true;
+
+        const linkDto = await controller.Update(fakeLinksService.data[0].id!, {
+            fullUrl: testUrl,
+            isPermanent,
+            shortId: newShortId,
+        });
+
+        expect(linkDto.originalUrl).toBe(testUrl);
+        expect(linkDto.isPermanent).toBe(isPermanent);
+        expect(linkDto.shortUrl).toContain(SERVER_URL);
+
+        compareLinks(fakeLinksService.data[0], linkDto);
+        console.log(linkDto);
+    });
+
+    it('PUT should throw HttpException if link does not exist', async () => {
+        expect.assertions(1);
+        try {
+            await controller.Update('not existing link id', {
+                shortId: '123',
+                fullUrl: 'http://something.org',
+                isPermanent: false,
+            });
+        } catch (e) {
+            const httpError = e as HttpException;
+            expect(httpError.getStatus()).toBe(404);
+        }
+    });
+
+    it('DELETE removes a link by id', async () => {
+        const linkToDelete = fakeLinksService.data[0];
+        const deletedLink = await controller.Delete(linkToDelete.id!);
+
+        compareLinks(linkToDelete, deletedLink);
+        expect(fakeLinksService.data.length).toBe(1);
+    });
+
+    it('DELETE throws exception if link does not exist', async () => {
+        expect.assertions(1);
+
+        try {
+            await controller.Delete('do not exist');
+        } catch (e) {
+            const httpError = e as HttpException;
+            expect(httpError.getStatus()).toBe(404);
+        }
     });
 });

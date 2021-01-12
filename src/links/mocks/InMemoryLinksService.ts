@@ -1,7 +1,7 @@
-import { ILinkService } from '../links.service';
+import { ILinksService } from '../links.service';
 import { ILink } from '../interfaces/link.interface';
 
-export class FakeLinksService implements ILinkService {
+export class InMemoryLinksService implements ILinksService {
     constructor(public data: ILink[]) {}
 
     getUserLinks(): Promise<ILink[]> {
@@ -33,14 +33,33 @@ export class FakeLinksService implements ILinkService {
         return Promise.resolve(link);
     }
 
-    deleteUserLink(linkId: string): Promise<ILink | null> {
-        const link = this.getUserLinkById(linkId);
+    async deleteUserLink(linkId: string): Promise<ILink | null> {
+        const link = await this.getUserLinkById(linkId);
         if (link == null) {
             return Promise.resolve(null);
         }
 
         this.data = this.data.filter(link => link.id !== linkId);
 
-        return Promise.resolve(link);
+        return link;
+    }
+
+    async updateLink(
+        id: string,
+        url?: string,
+        isPermanent?: boolean,
+        shortId?: string,
+    ) {
+        const link = await this.getUserLinkById(id);
+
+        if (link == null) {
+            return null;
+        }
+
+        link.originalUrl = url ?? link.originalUrl;
+        link.shortId = shortId ?? link.shortId;
+        link.isPermanent = isPermanent ?? link.isPermanent;
+
+        return link;
     }
 }

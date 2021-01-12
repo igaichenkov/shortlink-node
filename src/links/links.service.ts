@@ -7,20 +7,26 @@ import { InjectModel } from '@nestjs/mongoose';
 import { LinkIdGenerator } from './linkIdGenerator';
 import { retry } from '../utils/retry';
 import { MongoError } from 'mongodb';
-import { Types } from 'mongoose';
+import { ValidationError } from './errors/validation-error';
 
 const MAX_RETRIES = 10;
 
-export interface ILinkService {
+export interface ILinksService {
     getUserLinks(): Promise<ILink[]>;
     getUserLinkById(linkId: string): Promise<ILink | null>;
     resolveFullUrl(shortId: string): Promise<string | null>;
     createLink(url: string, isPermanent: boolean): Promise<ILink>;
     deleteUserLink(linkId: string): Promise<ILink | null>;
+    updateLink(
+        id: string,
+        url?: string,
+        isPermanent?: boolean,
+        shortId?: string,
+    ): Promise<ILink | null>;
 }
 
 @Injectable()
-export class LinksService implements ILinkService {
+export class LinksService implements ILinksService {
     private readonly linkModel: Model<Link>;
     private readonly idGenerator: LinkIdGenerator;
 
@@ -29,10 +35,10 @@ export class LinksService implements ILinkService {
         @InjectModel(Link.name) linkModel: Model<Link>,
     ) {
         if (!idGenerator)
-            throw new Error("'settings' parameter must be defined");
+            throw new ValidationError("'settings' parameter must be defined");
 
         if (!linkModel)
-            throw new Error("'linkModel' parameter must be defined");
+            throw new ValidationError("'linkModel' parameter must be defined");
 
         this.idGenerator = idGenerator;
         this.linkModel = linkModel;
@@ -68,7 +74,7 @@ export class LinksService implements ILinkService {
       throw new Error('[LinksService]: userId parameter must be provided');*/
 
         if (!isUri(fullUrl))
-            throw new Error('[LinksService] url parameter must be a valid url');
+            throw new ValidationError('Url parameter must be a valid url');
 
         if (shortId && shortId.length > 0) {
             // we are not generating short id, do not retry
