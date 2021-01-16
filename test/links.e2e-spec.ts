@@ -36,7 +36,7 @@ describe('AppController (e2e)', () => {
         await app.close();
     });
 
-    it('/ (GET)', async () => {
+    it('/links (GET)', async () => {
         const testLink1 = await service.createLink(
             'https://something.org/full/path',
             true,
@@ -57,7 +57,7 @@ describe('AppController (e2e)', () => {
             .expect(JSON.stringify(expectedResponesBody));
     });
 
-    it('/:id (GET)', async () => {
+    it('/links/:id (GET)', async () => {
         const testLink = await service.createLink(
             'https://something.org/full/path',
             true,
@@ -72,7 +72,7 @@ describe('AppController (e2e)', () => {
             .expect(JSON.stringify(expectedResponesBody));
     });
 
-    it('/:id (POST)', async () => {
+    it('/links (POST)', async () => {
         const fullUrl = 'https://something.org/full/path';
 
         request(app.getHttpServer())
@@ -91,8 +91,46 @@ describe('AppController (e2e)', () => {
                 expect(linkDto.isPermanent).toBe(true);
                 expect(linkDto.shortUrl).toBeTruthy();
                 expect(linkDto.shortUrl).toContain(dbLink?.shortId);
+
                 expect(dbLink?.originalUrl).toBe(fullUrl);
                 expect(dbLink?.createdOn).toBe(linkDto.createdOn);
+                expect(dbLink?.isPermanent).toBe(true);
+            });
+    });
+
+    it('/links/:id (PUT)', async () => {
+        const newFullUrl = 'https://something.org/new-path';
+        const newShortId = '1234567';
+        const newIsPermanent = false;
+
+        const testLink = await service.createLink(
+            'https://something.org/full/path',
+            true,
+            '654321',
+        );
+
+        request(app.getHttpServer())
+            .put('/links/' + testLink.id)
+            .send({
+                fullUrl: newFullUrl,
+                isPermanent: newIsPermanent,
+                shortId: newShortId,
+            })
+            .expect(200)
+            .expect(async (res: Response) => {
+                const linkDto = (await res.json()) as LinkDTO;
+                const dbLink = await linkModel.findById(linkDto.id).exec();
+
+                expect(dbLink).not.toBeNull();
+                expect(linkDto.originalUrl).toBe(newFullUrl);
+                expect(linkDto.isPermanent).toBe(newIsPermanent);
+                expect(linkDto.shortUrl).toBeTruthy();
+                expect(linkDto.shortUrl).toContain(dbLink?.shortId);
+
+                expect(dbLink?.originalUrl).toBe(newFullUrl);
+                expect(dbLink?.createdOn).toBe(linkDto.createdOn);
+                expect(dbLink?.isPermanent).toBe(newIsPermanent);
+                expect(dbLink?.shortId).toBe(newShortId);
             });
     });
 });
