@@ -71,4 +71,28 @@ describe('AppController (e2e)', () => {
             .expect(200)
             .expect(JSON.stringify(expectedResponesBody));
     });
+
+    it('/:id (POST)', async () => {
+        const fullUrl = 'https://something.org/full/path';
+
+        request(app.getHttpServer())
+            .post('/links')
+            .send({
+                fullUrl: fullUrl,
+                isPermanent: true,
+            })
+            .expect(201)
+            .expect(async (res: Response) => {
+                const linkDto = (await res.json()) as LinkDTO;
+                const dbLink = await linkModel.findById(linkDto.id).exec();
+
+                expect(dbLink).not.toBeNull();
+                expect(linkDto.originalUrl).toBe(fullUrl);
+                expect(linkDto.isPermanent).toBe(true);
+                expect(linkDto.shortUrl).toBeTruthy();
+                expect(linkDto.shortUrl).toContain(dbLink?.shortId);
+                expect(dbLink?.originalUrl).toBe(fullUrl);
+                expect(dbLink?.createdOn).toBe(linkDto.createdOn);
+            });
+    });
 });
