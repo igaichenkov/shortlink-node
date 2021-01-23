@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Model } from 'mongoose';
@@ -8,6 +8,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { LinksService } from '../src/links/links.service';
 import LinkSettings from '../src/links/LinkSettings';
 import { LinkDTO } from '../src/links/dto/link.dto';
+import { Types } from 'mongoose';
 
 describe('AppController (e2e)', () => {
     let app: INestApplication;
@@ -19,6 +20,8 @@ describe('AppController (e2e)', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [AppModule],
         }).compile();
+
+        moduleFixture.useLogger(false);
 
         linkModel = moduleFixture.get<Model<Link>>(getModelToken(Link.name));
         service = moduleFixture.get<LinksService>(LinksService);
@@ -53,7 +56,7 @@ describe('AppController (e2e)', () => {
 
         return await request(app.getHttpServer())
             .get('/links')
-            .expect(200)
+            .expect(HttpStatus.OK)
             .expect(JSON.stringify(expectedResponesBody));
     });
 
@@ -68,8 +71,14 @@ describe('AppController (e2e)', () => {
 
         return await request(app.getHttpServer())
             .get('/links/' + testLink.id)
-            .expect(200)
+            .expect(HttpStatus.OK)
             .expect(JSON.stringify(expectedResponesBody));
+    });
+
+    it('/links/:id (GET) does not exist', async () => {
+        return await request(app.getHttpServer())
+            .get('/links/123123')
+            .expect(HttpStatus.NOT_FOUND);
     });
 
     it('/links (POST)', async () => {
@@ -82,7 +91,7 @@ describe('AppController (e2e)', () => {
                 isPermanent: true,
             });
 
-        expect(res.status).toBe(201);
+        expect(res.status).toBe(HttpStatus.CREATED);
         const linkDto = res.body as LinkDTO;
         const dbLink = await linkModel.findById(linkDto.id).exec();
 
@@ -116,7 +125,7 @@ describe('AppController (e2e)', () => {
                 shortId: newShortId,
             });
 
-        expect(res.status).toBe(200);
+        expect(res.status).toBe(HttpStatus.OK);
         const linkDto = res.body as LinkDTO;
         const dbLink = await linkModel.findById(linkDto.id).exec();
 
@@ -132,6 +141,17 @@ describe('AppController (e2e)', () => {
         expect(dbLink?.shortId).toBe(newShortId);
     });
 
+    it('/links/:id (PUT) does not exist', async () => {
+        return await request(app.getHttpServer())
+            .put('/links/123123123')
+            .send({
+                fullUrl: 'https://something.org/new-path',
+                isPermanent: false,
+                shortId: '1234567',
+            })
+            .expect(HttpStatus.NOT_FOUND);
+    });
+
     it('/links/:id (DELETE)', async () => {
         const testLink = await service.createLink(
             'https://something.org/full/path',
@@ -143,7 +163,7 @@ describe('AppController (e2e)', () => {
             .delete('/links/' + testLink.id)
             .send();
 
-        expect(res.status).toBe(200);
+        expect(res.status).toBe(HttpStatus.OK);
         const linkDto = res.body as LinkDTO;
         const dbLink = await linkModel.findById(linkDto.id).exec();
 
@@ -153,5 +173,19 @@ describe('AppController (e2e)', () => {
         expect(linkDto.shortUrl).toContain(testLink.shortId);
         expect(linkDto.id).toBe(testLink.id);
         expect(linkDto.createdOn).toBe(testLink.createdOn.toJSON());
+    });
+
+    it('/links/:id (DELETE) does not exist', async () => {
+        return await request(app.getHttpServer())
+            .delete('/links/' + Types.ObjectId())
+            .send()
+            .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('/links/:id (DELETE) invalid id', async () => {
+        return await request(app.getHttpServer())
+            .delete('/links/123123123')
+            .send()
+            .expect(HttpStatus.NOT_FOUND);
     });
 });

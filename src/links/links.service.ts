@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Link } from './models/link';
 import { ILink } from './interfaces/link.interface';
 import { isUri } from 'valid-url';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { LinkIdGenerator } from './linkIdGenerator';
 import { retry } from '../utils/retry';
@@ -55,6 +55,9 @@ export class LinksService implements ILinksService {
         /*if (!userId)
       throw new Error('[LinksService]: userId parameter must be provided');*/
 
+        if (!isValidObjectId(linkId)) {
+            return null;
+        }
         const link = await this.linkModel.findById(linkId).exec();
         // TODO: check user id
         return link;
@@ -99,6 +102,10 @@ export class LinksService implements ILinksService {
         isPermanent?: boolean,
         shortId?: string,
     ) {
+        if (!isValidObjectId(id)) {
+            return null;
+        }
+
         const updateCmd = {} as any;
 
         if (url) {
@@ -158,6 +165,10 @@ export class LinksService implements ILinksService {
     }
 
     async deleteUserLink(linkId: string): Promise<ILink | null> {
+        if (!isValidObjectId(linkId)) {
+            return null;
+        }
+
         return await this.linkModel.findByIdAndDelete(linkId).exec();
     }
 }

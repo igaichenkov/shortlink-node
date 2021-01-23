@@ -8,6 +8,8 @@ import {
     Delete,
     HttpCode,
     Put,
+    HttpStatus,
+    Logger,
 } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { ILink } from './interfaces/link.interface';
@@ -19,26 +21,28 @@ import { UpdateLinkDTO } from './dto/update-link.dto';
 
 @Controller('links')
 export class LinksController {
+    private logger = new Logger(LinksController.name);
+
     constructor(
         private linksService: LinksService,
         private settings: LinkSettings,
     ) {}
 
     @Get()
-    @ApiResponse({ status: 200, type: LinkDTO, isArray: true })
+    @ApiResponse({ status: HttpStatus.OK, type: LinkDTO, isArray: true })
     async GetAll(): Promise<LinkDTO[]> {
         const links = await this.linksService.getUserLinks();
         return links.map(link => this.convertToLinkDTO(link));
     }
 
     @Get(':id')
-    @ApiResponse({ status: 200, type: LinkDTO })
-    @ApiResponse({ status: 404 })
+    @ApiResponse({ status: HttpStatus.OK, type: LinkDTO })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND })
     async GetById(@Param('id') id: string): Promise<LinkDTO> {
         const link = await this.linksService.getUserLinkById(id);
 
         if (!link) {
-            throw new HttpException('Link not found', 404);
+            throw new HttpException('Link not found', HttpStatus.NOT_FOUND);
         }
 
         return this.convertToLinkDTO(link);
@@ -46,7 +50,7 @@ export class LinksController {
 
     @Post()
     @ApiCreatedResponse({ type: LinkDTO })
-    @HttpCode(201)
+    @HttpCode(HttpStatus.CREATED)
     async CreateLink(@Body() dto: CreateLinkDTO): Promise<LinkDTO> {
         const link = await this.linksService.createLink(
             dto.fullUrl,
@@ -57,8 +61,8 @@ export class LinksController {
     }
 
     @Put(':id')
-    @ApiResponse({ status: 200, type: LinkDTO })
-    @ApiResponse({ status: 404 })
+    @ApiResponse({ status: HttpStatus.OK, type: LinkDTO })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND })
     async Update(@Param('id') id: string, @Body() dto: UpdateLinkDTO) {
         const link = await this.linksService.updateLink(
             id,
@@ -68,22 +72,27 @@ export class LinksController {
         );
 
         if (link === null) {
-            throw new HttpException('Link not found', 404);
+            throw new HttpException('Link not found', HttpStatus.NOT_FOUND);
         }
 
         return this.convertToLinkDTO(link);
     }
 
     @Delete(':id')
-    @ApiResponse({ status: 200, type: LinkDTO })
-    @ApiResponse({ status: 404 })
+    @ApiResponse({ status: HttpStatus.OK, type: LinkDTO })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND })
     async Delete(@Param('id') id: string): Promise<LinkDTO> {
         const link = await this.linksService.deleteUserLink(id);
-        if (!link) {
-            throw new HttpException('Link not found', 404);
-        }
+        try {
+            if (!link) {
+                throw new HttpException('Link not found', HttpStatus.NOT_FOUND);
+            }
 
-        return this.convertToLinkDTO(link);
+            return this.convertToLinkDTO(link);
+        } catch (e) {
+            this.logger.error(e);
+            throw e;
+        }
     }
 
     private convertToLinkDTO(link: ILink): LinkDTO {
