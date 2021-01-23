@@ -99,22 +99,31 @@ describe('Links Controller', () => {
     });
 
     it('POST should create a link', async () => {
-        const testUrl = 'https://google.com/some/page/path/';
-        const isPermanent = true;
+        const runTestCase = async (shortId?: string) => {
+            const testUrl = 'https://google.com/some/page/path/';
+            const isPermanent = true;
 
-        const linkDto = await controller.CreateLink({
-            fullUrl: testUrl,
-            isPermanent,
-        });
+            const linkDto = await controller.CreateLink({
+                fullUrl: testUrl,
+                isPermanent,
+                shortId: shortId,
+            });
 
-        expect(linkDto.originalUrl).toBe(testUrl);
-        expect(linkDto.isPermanent).toBe(isPermanent);
-        expect(linkDto.shortUrl).toContain(SERVER_URL);
+            expect(linkDto.originalUrl).toBe(testUrl);
+            expect(linkDto.isPermanent).toBe(isPermanent);
+            expect(linkDto.shortUrl).toContain(SERVER_URL);
 
-        compareLinks(
-            fakeLinksService.data[fakeLinksService.data.length - 1],
-            linkDto,
-        );
+            const linkDb =
+                fakeLinksService.data[fakeLinksService.data.length - 1];
+            compareLinks(linkDb, linkDto);
+
+            if (shortId) {
+                expect(linkDb.shortId).toBe(shortId);
+            }
+        };
+
+        await runTestCase();
+        await runTestCase('123456');
     });
 
     it('PUT should update a link', async () => {

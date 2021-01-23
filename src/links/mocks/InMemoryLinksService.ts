@@ -19,13 +19,17 @@ export class InMemoryLinksService implements ILinksService {
         return Promise.resolve(link ? link.originalUrl : null);
     }
 
-    createLink(url: string, isPermanent: boolean): Promise<ILink> {
+    createLink(
+        url: string,
+        isPermanent: boolean,
+        shortId?: string,
+    ): Promise<ILink> {
         const link: ILink = {
             id: Date.now().toString(),
             createdOn: new Date(),
             isPermanent: isPermanent,
             originalUrl: url,
-            shortId: Date.now().toString(),
+            shortId: shortId ?? Date.now().toString(),
         };
 
         this.data.push(link);

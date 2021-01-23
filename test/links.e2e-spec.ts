@@ -9,8 +9,11 @@ import { LinksService } from '../src/links/links.service';
 import LinkSettings from '../src/links/LinkSettings';
 import { LinkDTO } from '../src/links/dto/link.dto';
 import { Types } from 'mongoose';
+import * as mongoose from 'mongoose';
 
 describe('AppController (e2e)', () => {
+    mongoose.set('useFindAndModify', false);
+
     let app: INestApplication;
     let linkModel: Model<Link>;
     let service: LinksService;
@@ -82,28 +85,56 @@ describe('AppController (e2e)', () => {
     });
 
     it('/links (POST)', async () => {
+        const runTestCase = async (shortId?: string) => {
+            const fullUrl = 'https://something.org/full/path';
+
+            const res = await request(app.getHttpServer())
+                .post('/links')
+                .send({
+                    fullUrl: fullUrl,
+                    isPermanent: true,
+                    shortId: shortId,
+                });
+
+            expect(res.status).toBe(HttpStatus.CREATED);
+            const linkDto = res.body as LinkDTO;
+            const dbLink = await linkModel.findById(linkDto.id).exec();
+
+            expect(dbLink).not.toBeNull();
+            expect(linkDto.originalUrl).toBe(fullUrl);
+            expect(linkDto.isPermanent).toBe(true);
+            expect(linkDto.shortUrl).toBeTruthy();
+            expect(linkDto.shortUrl).toContain(dbLink?.shortId);
+
+            expect(dbLink?.originalUrl).toBe(fullUrl);
+            expect(dbLink?.createdOn.toJSON()).toBe(linkDto.createdOn);
+            expect(dbLink?.isPermanent).toBe(true);
+
+            if (shortId) {
+                expect(dbLink?.shortId).toBe(shortId);
+            }
+        };
+
+        await runTestCase();
+        await runTestCase('123456');
+    });
+
+    it('/links (POST) duplicate shortId', async () => {
         const fullUrl = 'https://something.org/full/path';
+        const shortId = '123456';
+
+        await service.createLink(fullUrl, true, shortId);
 
         const res = await request(app.getHttpServer())
             .post('/links')
             .send({
                 fullUrl: fullUrl,
                 isPermanent: true,
+                shortId: shortId,
             });
 
-        expect(res.status).toBe(HttpStatus.CREATED);
-        const linkDto = res.body as LinkDTO;
-        const dbLink = await linkModel.findById(linkDto.id).exec();
-
-        expect(dbLink).not.toBeNull();
-        expect(linkDto.originalUrl).toBe(fullUrl);
-        expect(linkDto.isPermanent).toBe(true);
-        expect(linkDto.shortUrl).toBeTruthy();
-        expect(linkDto.shortUrl).toContain(dbLink?.shortId);
-
-        expect(dbLink?.originalUrl).toBe(fullUrl);
-        expect(dbLink?.createdOn.toJSON()).toBe(linkDto.createdOn);
-        expect(dbLink?.isPermanent).toBe(true);
+        expect(res.status).toBe(HttpStatus.BAD_REQUEST);
+        expect(res.body.message).toContain('already exists');
     });
 
     it('/links/:id (PUT)', async () => {
@@ -139,6 +170,35 @@ describe('AppController (e2e)', () => {
         expect(dbLink?.createdOn.toJSON()).toBe(linkDto.createdOn);
         expect(dbLink?.isPermanent).toBe(newIsPermanent);
         expect(dbLink?.shortId).toBe(newShortId);
+    });
+
+    it('/links/:id (PUT) duplicate shortId', async () => {
+        const newFullUrl = 'https://something.org/new-path';
+        const newShortId = '1234567';
+        const newIsPermanent = false;
+
+        const testLink = await service.createLink(
+            'https://something.org/full/path',
+            true,
+            '654321',
+        );
+
+        await service.createLink(
+            'https://something.org/full/path',
+            true,
+            newShortId, // will cause duplicate key error
+        );
+
+        const res = await request(app.getHttpServer())
+            .put('/links/' + testLink.id)
+            .send({
+                fullUrl: newFullUrl,
+                isPermanent: newIsPermanent,
+                shortId: newShortId,
+            });
+
+        expect(res.status).toBe(HttpStatus.BAD_REQUEST);
+        expect(res.body.message).toContain('already exists');
     });
 
     it('/links/:id (PUT) does not exist', async () => {

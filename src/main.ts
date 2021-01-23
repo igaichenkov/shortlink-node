@@ -1,8 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as mongoose from 'mongoose';
 
 async function bootstrap() {
+    mongoose.set('useFindAndModify', false); // TODO: refactor
+
     const port =
         typeof process.env.port === 'number'
             ? Number.parseInt(process.env.port)

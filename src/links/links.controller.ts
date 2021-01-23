@@ -55,6 +55,7 @@ export class LinksController {
         const link = await this.linksService.createLink(
             dto.fullUrl,
             dto.isPermanent,
+            dto.shortId,
         );
 
         return this.convertToLinkDTO(link);

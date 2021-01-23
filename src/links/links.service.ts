@@ -7,16 +7,25 @@ import { InjectModel } from '@nestjs/mongoose';
 import { LinkIdGenerator } from './linkIdGenerator';
 import { retry } from '../utils/retry';
 import { MongoError } from 'mongodb';
-import { ValidationError } from './errors/validation-error';
+import { ValidationError } from '../errors/validation-error';
 
 const MAX_RETRIES = 10;
 
 export interface ILinksService {
     getUserLinks(): Promise<ILink[]>;
+
     getUserLinkById(linkId: string): Promise<ILink | null>;
+
     resolveFullUrl(shortId: string): Promise<string | null>;
-    createLink(url: string, isPermanent: boolean): Promise<ILink>;
+
+    createLink(
+        url: string,
+        isPermanent: boolean,
+        shortId?: string,
+    ): Promise<ILink>;
+
     deleteUserLink(linkId: string): Promise<ILink | null>;
+
     updateLink(
         id: string,
         url?: string,
@@ -71,7 +80,7 @@ export class LinksService implements ILinksService {
     async createLink(
         fullUrl: string,
         isPermanent: boolean,
-        shortId?: string | undefined,
+        shortId?: string,
     ): Promise<ILink> {
         /*if (!userId)
       throw new Error('[LinksService]: userId parameter must be provided');*/
@@ -121,9 +130,14 @@ export class LinksService implements ILinksService {
         }
 
         const options = { new: true };
-        return await this.linkModel
-            .findByIdAndUpdate(id, updateCmd, options)
-            .exec();
+        try {
+            return await this.linkModel
+                .findByIdAndUpdate(id, updateCmd, options)
+                .exec();
+        } catch (e) {
+            this.handleDuplicateKeyError(e, shortId ?? '');
+            throw new Error('Failed updating link ' + id);
+        }
     }
 
     private async saveShortLink(
@@ -134,13 +148,16 @@ export class LinksService implements ILinksService {
         try {
             return await this.saveLinkInternal(url, isPermanent, shortId);
         } catch (e) {
-            // TODO: logger
-            const duplicateKeyErrorCode = 11000;
-            if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
-                throw new Error(`Link ${shortId} already exists`);
-            }
-
+            this.handleDuplicateKeyError(e, shortId);
             throw new Error('Failed creating a new link');
+        }
+    }
+
+    private handleDuplicateKeyError(e, shortId: string) {
+        // TODO: logger
+        const duplicateKeyErrorCode = 11000;
+        if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
+            throw new ValidationError(`Link ${shortId} already exists`);
         }
     }
 
