@@ -1,6 +1,6 @@
 ## About
 
-A pet project to experiment NestJS framework. Makes absolutely no practical sense, over engineered and overcomplicated.
+A pet project to experiment with NestJS framework. Makes absolutely no practical sense, over engineered and overcomplicated.
 
 ## Installation
 
