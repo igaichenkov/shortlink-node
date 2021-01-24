@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Link } from './models/link';
 import { ILink } from './interfaces/link.interface';
 import { isUri } from 'valid-url';
@@ -38,6 +38,7 @@ export interface ILinksService {
 export class LinksService implements ILinksService {
     private readonly linkModel: Model<Link>;
     private readonly idGenerator: LinkIdGenerator;
+    private readonly logger = new Logger(LinksService.name);
 
     constructor(
         idGenerator: LinkIdGenerator,
@@ -100,7 +101,7 @@ export class LinksService implements ILinksService {
                 MAX_RETRIES,
             );
         } catch (e) {
-            // TODO: logger
+            this.logger.error(e);
             throw new Error('Failed creating a new link');
         }
     }
@@ -154,7 +155,7 @@ export class LinksService implements ILinksService {
     }
 
     private handleDuplicateKeyError(e, shortId: string) {
-        // TODO: logger
+        this.logger.error(e);
         const duplicateKeyErrorCode = 11000;
         if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
             throw new ValidationError(`Link ${shortId} already exists`);

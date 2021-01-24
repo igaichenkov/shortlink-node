@@ -21,11 +21,11 @@ import { UpdateLinkDTO } from './dto/update-link.dto';
 
 @Controller('links')
 export class LinksController {
-    private logger = new Logger(LinksController.name);
+    private readonly logger = new Logger(LinksController.name);
 
     constructor(
-        private linksService: LinksService,
-        private settings: LinkSettings,
+        private readonly linksService: LinksService,
+        private readonly settings: LinkSettings,
     ) {}
 
     @Get()
