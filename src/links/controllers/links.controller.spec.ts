@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LinksController } from './links.controller';
-import { LinksService } from './links.service';
-import LinkSettings from './LinkSettings';
-import { LinkIdGenerator } from './LinkIdGenerator';
-import { InMemoryLinksService } from './mocks/InMemoryLinksService';
+import { LinksService } from '../links.service';
+import LinkSettings from '../LinkSettings';
+import { LinkIdGenerator } from '../LinkIdGenerator';
+import { InMemoryLinksService } from '../mocks/InMemoryLinksService';
 import { nanoid } from 'nanoid';
-import { ILink } from './interfaces/link.interface';
-import { LinkDTO } from './dto/link.dto';
+import { ILink } from '../interfaces/link.interface';
+import { LinkDTO } from '../dto/link.dto';
 import { HttpException } from '@nestjs/common';
 
 const SERVER_URL = 'http://localhost:3000';

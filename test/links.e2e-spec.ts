@@ -248,4 +248,24 @@ describe('AppController (e2e)', () => {
             .send()
             .expect(HttpStatus.NOT_FOUND);
     });
+
+    it('/:id GET', async () => {
+        const shortId = '654321';
+        const testLink = await service.createLink(
+            'https://something.org/full/path',
+            true,
+            shortId,
+        );
+
+        return await request(app.getHttpServer())
+            .get('/' + shortId)
+            .expect('Location', testLink.originalUrl)
+            .expect(HttpStatus.TEMPORARY_REDIRECT);
+    });
+
+    it('/:id GET id does not exist', async () => {
+        return await request(app.getHttpServer())
+            .get('/1234567890')
+            .expect(HttpStatus.NOT_FOUND);
+    });
 });

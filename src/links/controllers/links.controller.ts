@@ -11,13 +11,13 @@ import {
     HttpStatus,
     Logger,
 } from '@nestjs/common';
-import { LinksService } from './links.service';
-import { ILink } from './interfaces/link.interface';
-import { LinkDTO } from './dto/link.dto';
-import { CreateLinkDTO } from './dto/create-link.dto';
+import { LinksService } from '../links.service';
+import { ILink } from '../interfaces/link.interface';
+import { LinkDTO } from '../dto/link.dto';
+import { CreateLinkDTO } from '../dto/create-link.dto';
 import { ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
-import LinkSettings from './LinkSettings';
-import { UpdateLinkDTO } from './dto/update-link.dto';
+import LinkSettings from '../LinkSettings';
+import { UpdateLinkDTO } from '../dto/update-link.dto';
 
 @Controller('links')
 export class LinksController {
