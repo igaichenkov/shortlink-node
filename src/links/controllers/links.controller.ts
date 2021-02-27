@@ -84,16 +84,11 @@ export class LinksController {
     @ApiResponse({ status: HttpStatus.NOT_FOUND })
     async Delete(@Param('id') id: string): Promise<LinkDTO> {
         const link = await this.linksService.deleteUserLink(id);
-        try {
-            if (!link) {
-                throw new HttpException('Link not found', HttpStatus.NOT_FOUND);
-            }
-
-            return this.convertToLinkDTO(link);
-        } catch (e) {
-            this.logger.error(e);
-            throw e;
+        if (!link) {
+            throw new HttpException('Link not found', HttpStatus.NOT_FOUND);
         }
+
+        return this.convertToLinkDTO(link);
     }
 
     private convertToLinkDTO(link: ILink): LinkDTO {

@@ -154,7 +154,7 @@ export class LinksService implements ILinksService {
         }
     }
 
-    private handleDuplicateKeyError(e, shortId: string) {
+    private handleDuplicateKeyError(e: Error | MongoError, shortId: string) {
         this.logger.error(e);
         const duplicateKeyErrorCode = 11000;
         if (e instanceof MongoError && e.code == duplicateKeyErrorCode) {
