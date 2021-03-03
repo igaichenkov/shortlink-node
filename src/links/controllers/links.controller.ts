@@ -10,6 +10,7 @@ import {
     Put,
     HttpStatus,
     Logger,
+    UseGuards,
 } from '@nestjs/common';
 import { LinksService } from '../links.service';
 import { ILink } from '../interfaces/link.interface';
@@ -18,8 +19,10 @@ import { CreateLinkDTO } from '../dto/create-link.dto';
 import { ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import LinkSettings from '../LinkSettings';
 import { UpdateLinkDTO } from '../dto/update-link.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('links')
+@UseGuards(AuthGuard('headerapikey'))
 export class LinksController {
     private readonly logger = new Logger(LinksController.name);
 
