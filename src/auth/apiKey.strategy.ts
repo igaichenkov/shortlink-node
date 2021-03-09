@@ -1,7 +1,8 @@
 import { HeaderAPIKeyStrategy } from 'passport-headerapikey';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
+import { UserPrincipal } from './user.principal';
 
 type verifiedCallbackFunction = (
     err: Error | null,
@@ -11,7 +12,7 @@ type verifiedCallbackFunction = (
 
 @Injectable()
 export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy) {
-    constructor(private authService: AuthService) {
+    constructor(private usersService: UsersService) {
         super(
             { header: 'x-api-key', prefix: '' },
             false,
@@ -24,11 +25,16 @@ export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy) {
         apiKey: string,
         verified: verifiedCallbackFunction,
     ) {
-        const user = await this.authService.validateKey(apiKey);
-        if (user) {
-            return verified(null, { userName: 'testuser' });
-        }
+        try {
+            const user = await this.usersService.findUserByApiKey(apiKey);
+            if (user) {
+                const principal = new UserPrincipal(user);
+                return verified(null, principal);
+            }
 
-        verified(new Error('Invalid API key'));
+            verified(null);
+        } catch (error) {
+            verified(error);
+        }
     }
 }

@@ -8,7 +8,6 @@ import { getModelToken } from '@nestjs/mongoose';
 import { LinksService } from '../src/links/links.service';
 import LinkSettings from '../src/links/LinkSettings';
 import { LinkDTO } from '../src/links/dto/link.dto';
-import { Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 
 describe('AppController (e2e)', () => {
@@ -237,7 +236,7 @@ describe('AppController (e2e)', () => {
 
     it('/links/:id (DELETE) does not exist', async () => {
         return await request(app.getHttpServer())
-            .delete('/links/' + Types.ObjectId())
+            .delete('/links/' + mongoose.Types.ObjectId())
             .send()
             .expect(HttpStatus.NOT_FOUND);
     });

@@ -143,7 +143,6 @@ describe('Links Controller', () => {
         expect(linkDto.shortUrl).toContain(SERVER_URL);
 
         compareLinks(fakeLinksService.data[0], linkDto);
-        console.log(linkDto);
     });
 
     it('PUT should throw HttpException if link does not exist', async () => {

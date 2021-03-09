@@ -2,8 +2,6 @@ import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 import { ILink } from '../interfaces/link.interface';
 import { Document } from 'mongoose';
 
-//import { IUser } from './user';
-
 @Schema()
 export class Link extends Document implements ILink {
     @Prop({ required: true })

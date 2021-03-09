@@ -27,6 +27,7 @@
         "@nestjs/passport": "^7.1.5",
         "@nestjs/platform-express": "^7.6.5",
         "@nestjs/swagger": "^4.7.9",
+        "argon2": "^0.27.1",
         "mongodb": "^3.6.3",
         "mongoose": "^5.11.10",
         "nanoid": "^3.1.9",
