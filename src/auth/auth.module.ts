@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ApiKeyStrategy } from './apiKey.strategy';
 import { PassportModule } from '@nestjs/passport';
-import { UsersModule } from 'src/users/users.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
     imports: [PassportModule, UsersModule],
