@@ -200,7 +200,7 @@ describe('LinksService', () => {
         await createTestLinkEntry();
 
         const updatedLink = await await service.updateLink(
-            Types.ObjectId().toString(),
+            (new Types.ObjectId()).toString(),
             newFullUrl,
             false,
             newShortId,
