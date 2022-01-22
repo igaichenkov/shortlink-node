@@ -29,7 +29,7 @@
         "argon2": "^0.28.3",
         "mongodb": "^4.2.0",
         "mongoose": "^6.0.13",
-        "nanoid": "^3.1.30",
+        "nanoid": "^3.1.31",
         "passport-headerapikey": "^1.2.2",
         "rimraf": "^3.0.2",
         "swagger-ui-express": "^4.1.6",
